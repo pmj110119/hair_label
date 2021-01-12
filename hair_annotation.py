@@ -10,7 +10,6 @@ from hair import getOrientation,get_PCA_angle,getWarpTile,curve_plot,get_width,a
 from status import Ui_Form
 from pyqtgraph import PlotWidget
 import pyqtgraph as pg
-from pyqtgraph.dockarea import *
 #全局变量，图像文件夹路径
 imgPath = "imgs/"
 #全局变量，结果存放变量
@@ -36,50 +35,6 @@ class Mark(QMainWindow,Ui_Form):
         self.show_binary=False
         self.handle_index=-1
         
-      
-        
-    def imageHoverEvent(self,event):
-        x,y = event.pos().x(),event.pos().y()
-  
-    def imageMouseClickEvent(self,event):
-        pos = event.pos()
-        i, j = pos.x(), pos.y()
-        if len(self.image_origin.shape) == 3:
-            i = int(np.clip(i, 0, self.image_origin.shape[1] - 1))
-            j = int(np.clip(j, 0, self.image_origin.shape[0] - 1))
-        else:
-            self.statusBar().showMessage("图像维度超出了可加载范围")
-            return
-
-        if event.button() == QtCore.Qt.RightButton: # 右键
-            min_distance = 99999
-            min_idx = -1
-            for idx,result in enumerate(self.result):
-                [[x,y],[w,h],angle] = result['rect']
-                dis = (i-x)*(i-x) + (j-y)*(j-y)
-                if(dis < min_distance):
-                    min_distance = dis
-                    min_idx = idx
-            self.handle_index = min_idx
-            self.imshow()
-           
-
-        if event.button() == QtCore.Qt.LeftButton:  # 左键
-            img = self.image_origin.copy()
-            print(i,j,'   ',img.shape)
-            pkg = auto_search(img,[i,j], self.box_width_init, self.box_height_init,binary_threshold=self.binary_threshold,is_show=False)
-            # 保存结果
-            is_find = pkg['is_find']
-            if(is_find):  
-                box = pkg['box']
-                rect = pkg['rect']
-                self.result.append({'rect':rect, 'box':box, 'width':rect[1][1]})
-
-            self.image_ploted = img # 保存画上图案的图片
-            self.imshow()
-           # print('左键',self.result)
-
-
     def buttonClick(self):#label上显示文字hello world
         print('111111111')
     def initUI(self):
@@ -114,83 +69,68 @@ class Mark(QMainWindow,Ui_Form):
         self.plot_widget.addItem(bg)
         #self.curve = self.plot_widget.plot(self.width_count, name="mode2")
         
-
-   
-
-        self.TestImageView = pg.ImageView()
-        
-        self.TestImageView.getHistogramWidget().setVisible(False)
-        self.TestImageView.ui.menuBtn.setVisible(False)
-        self.TestImageView.ui.roiBtn.setVisible(False)
-
-        self.TestImageView.getImageItem().hoverEvent = self.imageHoverEvent  # 实时显示
-        self.TestImageView.getImageItem().mouseClickEvent = self.imageMouseClickEvent
-        self.TestImageView.getView().setMenuEnabled(False)
-        # dockIV.addWidget(self.TestImageView)
-
-        self.dockWidget.setWidget(self.TestImageView)
+ 
     
 
-    # def mousePressEvent(self, QMouseEvent):      #鼠标单击事件
-    #     self.handle_index = -1
-    #     if self.img_loaded==False:
-    #         return 
-    #     fr = float(self.editR.text())          # 读取缩放比例
-    #     pointT = QMouseEvent.pos()             # 获得鼠标点击处的坐标
-    #     point = [int( (pointT.x()-200)/fr + 0.5),int((pointT.y()-70)/fr+0.5) ]
+    def mousePressEvent(self, QMouseEvent):      #鼠标单击事件
+        self.handle_index = -1
+        if self.img_loaded==False:
+            return 
+        fr = float(self.editR.text())          # 读取缩放比例
+        pointT = QMouseEvent.pos()             # 获得鼠标点击处的坐标
+        point = [int( (pointT.x()-200)/fr + 0.5),int((pointT.y()-70)/fr+0.5) ]
 
-    #     # for result_ in self.result:
-    #     #     rect = result_['rect']
-    #     #     [[x,y],[w,h],angle] = rect
+        # for result_ in self.result:
+        #     rect = result_['rect']
+        #     [[x,y],[w,h],angle] = rect
 
-    #     #     dif = (x-point[0])*(x-point[0])+(y-point[1])*(y-point[1])
-    #     #     if(dif<1000):
-    #     #         print(dif)
+        #     dif = (x-point[0])*(x-point[0])+(y-point[1])*(y-point[1])
+        #     if(dif<1000):
+        #         print(dif)
 
-    #     if(point[0]>0 and point[1]>0):
-    #         if QMouseEvent.button()==Qt.LeftButton:
-    #             img = self.image_origin.copy()
-    #             pkg = auto_search(img,[point[0],point[1]], self.box_width_init, self.box_height_init,binary_threshold=self.binary_threshold,is_show=False)
-    #             # 保存结果
-    #             is_find = pkg['is_find']
-    #             if(is_find):  
-    #                 box = pkg['box']
-    #                 rect = pkg['rect']
-    #                 self.result.append({'rect':rect, 'box':box, 'width':rect[1][1]})
+        if(point[0]>0 and point[1]>0):
+            if QMouseEvent.button()==Qt.LeftButton:
+                img = self.image_origin.copy()
+                pkg = auto_search(img,[point[0],point[1]], self.box_width_init, self.box_height_init,binary_threshold=self.binary_threshold,is_show=False)
+                # 保存结果
+                is_find = pkg['is_find']
+                if(is_find):  
+                    box = pkg['box']
+                    rect = pkg['rect']
+                    self.result.append({'rect':rect, 'box':box, 'width':rect[1][1]})
 
-    #             self.image_ploted = img # 保存画上图案的图片
-    #             self.imshow()
-    #         elif QMouseEvent.button()==Qt.RightButton:
-    #             min_distance = 99999
-    #             min_idx = -1
-    #             for idx,result in enumerate(self.result):
-    #                 [[x,y],[w,h],angle] = result['rect']
-    #                 dis = (point[0]-x)*(point[0]-x) + (point[1]-y)*(point[1]-y)
-    #                 if(dis < min_distance):
-    #                     min_distance = dis
-    #                     min_idx = idx
-    #             self.handle_index = min_idx
-    #             self.imshow()
-    #             pass
+                self.image_ploted = img # 保存画上图案的图片
+                self.imshow()
+            elif QMouseEvent.button()==Qt.RightButton:
+                min_distance = 99999
+                min_idx = -1
+                for idx,result in enumerate(self.result):
+                    [[x,y],[w,h],angle] = result['rect']
+                    dis = (point[0]-x)*(point[0]-x) + (point[1]-y)*(point[1]-y)
+                    if(dis < min_distance):
+                        min_distance = dis
+                        min_idx = idx
+                self.handle_index = min_idx
+                self.imshow()
+                pass
 
-    #     self.plot_widget.clear()
-    #     self.width_count = np.zeros(30)
-    #     for result_ in self.result:
-    #         width = result_['width']
-    #         if(width>30):   # 暂时认为不存在超过30宽度的毛发，后面改成自适应数组
-    #             continue
-    #         self.width_count[int(width)] += 1
+       
+        self.width_count = np.zeros(30)
+        for result_ in self.result:
+            width = result_['width']
+            if(width>30):   # 暂时认为不存在超过30宽度的毛发，后面改成自适应数组
+                continue
+            self.width_count[int(width)] += 1
 
-    #     bg = pg.BarGraphItem(x=self.x, height=self.width_count, width=0.8)
-    #     self.plot_widget.addItem(bg)
+        bg = pg.BarGraphItem(x=self.x, height=self.width_count, width=0.8)
+        self.plot_widget.addItem(bg)
 
-    # def eventFilter(self,source, event):
-    #     if event.type()==QEvent.MouseMove:
-    #         [x,y] = [event.pos().x(),event.pos().y()]
-    #         #print([x,y])
+    def eventFilter(self,source, event):
+        if event.type()==QEvent.MouseMove:
+            [x,y] = [event.pos().x(),event.pos().y()]
+            #print([x,y])
     
-    #     return QMainWindow.eventFilter(self, source, event)
-    
+        return QMainWindow.eventFilter(self, source, event)
     
 
     def keyPressEvent(self, QKeyEvent):  # 键盘某个键被按下时调用
@@ -315,14 +255,10 @@ class Mark(QMainWindow,Ui_Form):
                 img = cv.cvtColor(img, cv.COLOR_GRAY2RGB)
                 img = curve_plot(img,self.result,(255,0,0),self.handle_index)
                 # img = cv.cv
-        #    # self.image_origin)
-            self.TestImageView.clear()
-            self.TestImageView.setImage(cv.transpose(img))
-        #     img = cv.resize(img, self.img_size)
-        #     img = QtGui.QImage(img, img.shape[1], img.shape[0],
-        #                 img.shape[1]*3, QtGui.QImage.Format_RGB888)  # bytesPerLine参数设置为image的width*image.channels
-            # self.labelImg.setPixmap(QtGui.QPixmap(img))
-
+            img = cv.resize(img, self.img_size)
+            img = QtGui.QImage(img, img.shape[1], img.shape[0],
+                        img.shape[1]*3, QtGui.QImage.Format_RGB888)  # bytesPerLine参数设置为image的width*image.channels
+            self.labelImg.setPixmap(QtGui.QPixmap(img))
         except: # 未加载图像
             pass
 
@@ -345,34 +281,27 @@ class Mark(QMainWindow,Ui_Form):
         self.image_origin = src.copy()
         self.image_ploted = src.copy()
 
-        # height = src.shape[0]             #图像高度
-        # ratioY = self.labelImg.height()/(height+0.0)  #按高度值缩放
-        # self.editR.setText(str(ratioY))    # 编辑框记录缩放值
+        height = src.shape[0]             #图像高度
+        ratioY = self.labelImg.height()/(height+0.0)  #按高度值缩放
+        self.editR.setText(str(ratioY))    # 编辑框记录缩放值
  
         
-        # width = src.shape[1]           # 计算图像宽度，缩放图像
-        # height2 = self.labelImg.height()
-        # width2 = int(width*ratioY + 0.5)
+        width = src.shape[1]           # 计算图像宽度，缩放图像
+        height2 = self.labelImg.height()
+        width2 = int(width*ratioY + 0.5)
         
-        # img2 = cv.resize(src, (width2, height2))
+        img2 = cv.resize(src, (width2, height2))
 
-        # self.img_size=(width2, height2)
+        self.img_size=(width2, height2)
 
         
-        # img2 = QtGui.QImage(img2, img2.shape[1], img2.shape[0],
-        #                img2.shape[1]*3, QtGui.QImage.Format_RGB888)  # bytesPerLine参数设置为image的width*image.channels
-        # self.labelImg.setPixmap(QtGui.QPixmap(img2))
+        img2 = QtGui.QImage(img2, img2.shape[1], img2.shape[0],
+                       img2.shape[1]*3, QtGui.QImage.Format_RGB888)  # bytesPerLine参数设置为image的width*image.channels
+        self.labelImg.setPixmap(QtGui.QPixmap(img2))
 
         self.img_loaded=True
         self.allFiles.clearFocus()
 
-        
-        # src = cv.imread('imgs/103ACDLJ.jpg')
-        # src = cv.cvtColor(src, cv.COLOR_BGR2RGB)
-        # self.src = cv.rotate(src, cv.ROTATE_90_CLOCKWISE)
-       # img_trans=cv2.transpose(img)
-        self.TestImageView.setImage(cv.transpose(self.image_origin))
-        
  
 
 
